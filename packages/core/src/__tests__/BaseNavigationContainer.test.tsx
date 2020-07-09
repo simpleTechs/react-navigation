@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { act, render } from 'react-native-testing-library';
-import type {
+import {
   DefaultRouterOptions,
   NavigationState,
   Router,
+  StackRouter,
 } from '@react-navigation/routers';
 import BaseNavigationContainer from '../BaseNavigationContainer';
 import NavigationStateContext from '../NavigationStateContext';
@@ -430,9 +431,9 @@ it('emits state events when the state changes', () => {
   });
 });
 
-it('emits state events when options change', () => {
+it('emits option events when options change', () => {
   const TestNavigator = (props: any) => {
-    const { state, descriptors } = useNavigationBuilder(MockRouter, props);
+    const { state, descriptors } = useNavigationBuilder(StackRouter, props);
 
     return (
       <React.Fragment>
@@ -455,7 +456,10 @@ it('emits state events when options change', () => {
         <Screen name="baz" options={{ v: 3 }}>
           {() => (
             <TestNavigator>
-              <Screen name="foo" options={{ g: 5 }}>
+              <Screen name="qux" options={{ g: 5 }}>
+                {() => null}
+              </Screen>
+              <Screen name="quxx" options={{ h: 9 }}>
                 {() => null}
               </Screen>
             </TestNavigator>
@@ -474,19 +478,30 @@ it('emits state events when options change', () => {
     ref.current?.navigate('bar');
   });
 
+  expect(listener).toBeCalledTimes(1);
   expect(listener.mock.calls[0][0].data.options).toEqual({
     y: 2,
   });
 
   ref.current?.removeListener('options', listener);
+
   const listener2 = jest.fn();
+
   ref.current?.addListener('options', listener2);
 
   act(() => {
     ref.current?.navigate('baz');
   });
 
+  expect(listener2).toBeCalledTimes(1);
   expect(listener2.mock.calls[0][0].data.options).toEqual({ g: 5 });
+
+  act(() => {
+    ref.current?.navigate('quxx');
+  });
+
+  expect(listener2).toBeCalledTimes(2);
+  expect(listener2.mock.calls[1][0].data.options).toEqual({ h: 9 });
 });
 
 it('throws if there is no navigator rendered', () => {
